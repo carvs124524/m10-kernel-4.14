@@ -9,6 +9,7 @@
 #include <linux/sched/debug.h>
 #include <linux/mm.h>
 #include <linux/wait.h>
+#include <linux/poll.h>
 #include <linux/hash.h>
 #include <linux/kthread.h>
 
@@ -143,6 +144,13 @@ static void __wake_up_common_lock(struct wait_queue_head *wq_head, unsigned int 
  * It may be assumed that this function implies a write memory barrier before
  * changing the task state if and only if any tasks are woken up.
  */
+void __wake_up_pollfree(struct wait_queue_head *wq_head)
+{
+	__wake_up(wq_head, TASK_NORMAL, 0, (void *)(POLLHUP | POLLFREE));
+	/* POLLFREE must have cleared the queue. */
+	WARN_ON_ONCE(waitqueue_active(wq_head));
+}
+
 void __wake_up(struct wait_queue_head *wq_head, unsigned int mode,
 			int nr_exclusive, void *key)
 {
