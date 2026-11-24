@@ -1686,7 +1686,7 @@ char *pointer_string(char *buf, char *end, const void *ptr,
 static bool have_filled_random_ptr_key __read_mostly;
 static siphash_key_t ptr_key __read_mostly;
 
-static void fill_random_ptr_key(struct random_ready_callback *unused)
+static void fill_random_ptr_key(void)
 {
 	get_random_bytes(&ptr_key, sizeof(ptr_key));
 	/*
@@ -1698,24 +1698,12 @@ static void fill_random_ptr_key(struct random_ready_callback *unused)
 	WRITE_ONCE(have_filled_random_ptr_key, true);
 }
 
-static struct random_ready_callback random_ready = {
-	.func = fill_random_ptr_key
-};
-
 static int __init initialize_ptr_random(void)
 {
-	int ret = add_random_ready_callback(&random_ready);
-
-	if (!ret) {
-		return 0;
-	} else if (ret == -EALREADY) {
-		fill_random_ptr_key(&random_ready);
-		return 0;
-	}
-
-	return ret;
+	fill_random_ptr_key();
+	return 0;
 }
-early_initcall(initialize_ptr_random);
+late_initcall(initialize_ptr_random);
 
 /* Maps a pointer to a 32 bit unique identifier. */
 static char *ptr_to_id(char *buf, char *end, void *ptr, struct printf_spec spec)

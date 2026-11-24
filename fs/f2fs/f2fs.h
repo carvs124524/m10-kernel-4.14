@@ -27,6 +27,9 @@
 
 #include <linux/fscrypt.h>
 
+#define EFSCORRUPTED	EUCLEAN		/* Filesystem is corrupted */
+#define EFSBADCRC	EBADMSG		/* Bad CRC detected */
+
 #ifdef CONFIG_F2FS_CHECK_FS
 #define f2fs_bug_on(sbi, condition)	BUG_ON(condition)
 #else

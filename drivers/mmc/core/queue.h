@@ -85,3 +85,5 @@ extern unsigned int mmc_queue_map_sg(struct mmc_queue *,
 				     struct mmc_queue_req *);
 
 #endif
+
+extern int mmc_access_rpmb(struct mmc_queue *);

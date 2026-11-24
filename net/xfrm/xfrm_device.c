@@ -158,11 +158,6 @@ static int xfrm_dev_register(struct net_device *dev)
 	return NOTIFY_DONE;
 }
 
-static int xfrm_dev_unregister(struct net_device *dev)
-{
-	return NOTIFY_DONE;
-}
-
 static int xfrm_dev_feat_change(struct net_device *dev)
 {
 	if ((dev->features & NETIF_F_HW_ESP) && !dev->xfrmdev_ops)
