@@ -13,12 +13,14 @@ por tamanho; aponte `TOOLCHAIN` para o diretório que contém
 
 ## Configuração
 
-`arch/arm64/configs/m10_s9863a1h10_defconfig` é a configuração stock do M10
-(extraída do aparelho), com os símbolos que o BSP precisa: SDHCR11, MUSB SPRD,
-DRM SPRD, touchscreen FocalTech, F2FS, binder/ashmem, pstore, etc.
+`arch/arm64/configs/m10_s9863a1h10_defconfig` é a configuração usada no
+bring-up (baseada na config stock do pass9), com SDHCR11, MUSB SPRD, DRM SPRD,
+touchscreen FocalTech, F2FS, binder/ashmem, pstore, etc.
 
-Ela é uma configuração completa; `olddefconfig` resolve os símbolos novos da
-4.14.336. O build de validação usou exatamente essa configuração.
+A config real do kernel stock do aparelho (`/proc/config.gz`) é praticamente
+a mesma; a única diferença encontrada foi `CONFIG_CHARGER_SC2721=y`, um driver
+que não existe no BSP público. O build do 4.14.336 usa a defconfig acima e
+`olddefconfig` resolve os símbolos novos.
 
 ## Comando reproduzível
 
@@ -62,8 +64,12 @@ antigo do vendor.
 
 ## Resultado da validação
 
-- `Image`: `97200a0d60d8029be28b468f557bff1875fa45d890eac5026e5f28379f64be87`
-- tamanho: `16556048` bytes (16 MB)
-- config: `m10_s9863a1h10_defconfig` (stock do M10)
+- `Image`: `3e7f785f32fb9635924fd4bedc024dd3fc5b41f5a92097574511eea0c4c6a1c9`
+- tamanho: `16621584` bytes (16 MB)
+- versão: `4.14.336+` (o `+` é o localversion do build; o código é 4.14.336)
+- config: `m10_s9863a1h10_defconfig`
 - toolchain: Android Clang 9.0.3 r353983c + GCC 4.9
-- build: completo, sem erros
+- build: limpo, completo, sem erros
+
+O build completo do zero levou cerca de 30 minutos numa Codespace de 2 vCPU.
+Builds incrementais (mudança de um arquivo + link) levam 1–2 minutos.
