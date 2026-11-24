@@ -1336,6 +1336,11 @@ int sdiohal_scan_card(void *wcn_dev)
 	sdiohal_resume_check();
 	init_completion(&p_data->scan_done);
 	sdio_register_driver(&sdiohal_driver);
+	WCN_INFO("scan: card=%p rescan_disable=%u caps=0x%x\n",
+		 p_data->sdio_dev_host->card,
+		 p_data->sdio_dev_host->rescan_disable,
+		 p_data->sdio_dev_host->caps);
+	p_data->sdio_dev_host->rescan_disable = 0;
 	mmc_detect_change(p_data->sdio_dev_host, 0);
 	if (wait_for_completion_timeout
 		(&p_data->scan_done,
