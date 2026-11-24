@@ -1,75 +1,52 @@
 # Build do kernel 4.14.336 do M10
 
-## Toolchain usado na validação
+## Toolchain
 
-- Android Clang **9.0.3 r353983c** (`clang-r353983c`)
-- GCC pré-compilado **4.9** para `aarch64-linux-android-` e
-  `arm-linux-androideabi-`
+- Android Clang **9.0.3 r353983c**
+- GCC 4.9 `aarch64-linux-android-` / `arm-linux-androideabi-`
 - `make`, `bc`, `flex`, `bison`, `libssl-dev`, `libelf-dev`, `libyaml-dev`
-
-O toolchain é o mesmo usado pelo BSP 4.14.133. Ele não está neste repositório
-por tamanho; aponte `TOOLCHAIN` para o diretório que contém
-`clang-r353983c`, `gcc-aarch64-4.9`, `gcc-arm-4.9` e `host`.
 
 ## Configuração
 
-`arch/arm64/configs/m10_s9863a1h10_defconfig` é a configuração usada no
-bring-up (baseada na config stock do pass9), com SDHCR11, MUSB SPRD, DRM SPRD,
-touchscreen FocalTech, F2FS, binder/ashmem, pstore, etc.
+`arch/arm64/configs/m10_s9863a1h10_defconfig` (base stock do aparelho; KASAN
+off). A config real do stock (`/proc/config.gz`) é praticamente igual; a única
+diferença encontrada é `CONFIG_CHARGER_SC2721=y`, driver ausente no BSP
+público. Veja também `Documentation/m10/stock-device.config`.
 
-A config real do kernel stock do aparelho (`/proc/config.gz`) é praticamente
-a mesma; a única diferença encontrada foi `CONFIG_CHARGER_SC2721=y`, um driver
-que não existe no BSP público. O build do 4.14.336 usa a defconfig acima e
-`olddefconfig` resolve os símbolos novos.
-
-## Comando reproduzível
+## Comando
 
 ```bash
 export TOOLCHAIN=/caminho/para/toolchain
-JOBS=2 ./build-m10.sh
+JOBS=4 ./build-m10.sh
 ```
 
-O script:
+O script roda `m10_s9863a1h10_defconfig`, `olddefconfig` e compila `Image`.
 
-1. exporta o PATH do Clang/GCC do BSP;
-2. copia a defconfig para o diretório de saída;
-3. roda `olddefconfig`;
-4. compila `Image`;
-5. imprime o SHA-256.
+## Resultado validado
 
-## Build manual
+- `Image`: `0e3756bcebce0b213a7699cebe2cf36ebbc5ac045773f490de946b5c8b1929cb`
+- tamanho: `16556048` bytes
+- versão: `4.14.336+`
+- `Module.symvers`: `5caa130beb122011ac6444cf72b7bef63e5ae9bb186397b70c62f548d34c28c2`
+- config: `m10_s9863a1h10_defconfig`
+- `module_layout`: `0x32781cf7`
+- boot AVB usado no teste: `260b4873d5f976dc800225dd846abde8e7abebe94ff5d2b8150951edcff6702d`
+  (stock ramdisk/DTB + AVB assinado com a chave original)
+
+O build completo do zero levou ~10-15 min em 4 vCPU.
+
+## Módulos vendor
+
+Use o `Module.symvers` acima e `scripts/m10-patch-vendor-ko.py`:
 
 ```bash
-out=../build-m10-4.14
-export PATH="$TOOLCHAIN/host/usr/bin:$TOOLCHAIN/clang-r353983c/bin:$TOOLCHAIN/gcc-aarch64-4.9/bin:$TOOLCHAIN/gcc-arm-4.9/bin:$PATH"
-
-make O="$out" ARCH=arm64 \
-  CC=clang CLANG_TRIPLE=aarch64-linux-gnu- \
-  CROSS_COMPILE=aarch64-linux-android- \
-  CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-  HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -std=gnu89 -fcommon" \
-  m10_s9863a1h10_defconfig
-
-make O="$out" ARCH=arm64 \
-  CC=clang CLANG_TRIPLE=aarch64-linux-gnu- \
-  CROSS_COMPILE=aarch64-linux-android- \
-  CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-  HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -std=gnu89 -fcommon" \
-  -j2 Image
+python3 scripts/m10-patch-vendor-ko.py \
+  --symvers Module.symvers \
+  --old-version 4.14.133 \
+  --new-version 4.14.336+ \
+  --outdir patched \
+  /caminho/para/*.ko
 ```
 
-`HOSTCFLAGS` com `-fcommon` é necessário para compilar o kbuild antigo com
-GCCs modernos do host. O Clang 9 do BSP é obrigatório para o código ARM64
-antigo do vendor.
-
-## Resultado da validação
-
-- `Image`: `3e7f785f32fb9635924fd4bedc024dd3fc5b41f5a92097574511eea0c4c6a1c9`
-- tamanho: `16621584` bytes (16 MB)
-- versão: `4.14.336+` (o `+` é o localversion do build; o código é 4.14.336)
-- config: `m10_s9863a1h10_defconfig`
-- toolchain: Android Clang 9.0.3 r353983c + GCC 4.9
-- build: limpo, completo, sem erros
-
-O build completo do zero levou cerca de 30 minutos numa Codespace de 2 vCPU.
-Builds incrementais (mudança de um arquivo + link) levam 1–2 minutos.
+Depois copie os `.ko` patchados para `/mnt/vendor/socko` (rw) e reinicie.
+Os módulos proprietários não são distribuídos.
